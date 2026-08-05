@@ -1,0 +1,39 @@
+# Historical archives and obsolete result sets
+C4调度模型与分析/90_历史工作归档/
+C5/_obsolete_results/
+
+# Local editor / OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Python cache and virtual environments
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.ipynb_checkpoints/
+**/.venv/
+**/venv/
+**/env/
+
+# General temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+
+# Common build / packaging outputs
+**/build/
+**/dist/
+**/out/
+**/target/
+**/coverage/
+**/htmlcov/
+**/node_modules/
