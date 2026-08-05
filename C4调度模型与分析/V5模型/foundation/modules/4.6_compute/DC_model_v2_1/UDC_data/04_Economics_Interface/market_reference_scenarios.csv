@@ -1,5 +1,8 @@
 reference_id,parameter,value,unit,reference_date,source_url,source_type,use_in_model,status
 GD_POWER_2026M06,electricity_transfer_price,401.34,CNY/MWh,2026-06,https://pdf.dfcfw.com/pdf/H3_AP202606021823149322_1.pdf,行业研究报告_转引广东电力交易中心,default,当前市场参照；不是海岛内部真实结算合同
+GD_POWER_2026M06_GREEN_PROXY,electricity_transfer_price_with_green_premium,448.34,CNY/MWh,2026-06,https://pdf.dfcfw.com/pdf/H3_AP202606021823149322_1.pdf,由广东月度综合价加绿电溢价代理派生,mechanism_peak,公开代理；不是PPA或绿证合同
 GD_POWER_2025M06,electricity_transfer_price,372.70,CNY/MWh,2025-06,https://www.cpem.org.cn/list5/108348.html,行业数据网站_转引广东电力交易中心,historical_sensitivity,与原仿真月份一致的历史参照
+H2_GREEN_INDEX_PROXY,green_hydrogen_price,28.36,CNY/kg,2025-06,https://www.news.cn/tech/20260408/e4fc40c57e604b0fa5987d47de508a6b/c.html,公开氢价指数/新闻转引,default_proxy,绿色氢能价格指数代理；不是项目承购合同
+COMPUTE_GPU_RENTAL_BLEND,compute_service_price,5000,CNY/MWh-IT,2026-07-25,https://backup.autodl.com/,公开GPU租赁报价折算代理,default_fallback,混合算力服务回退价；联合仿真优先读取任务级收入
 UDC_PUE_LINGANG,design_pue,1.076,p.u.,2024,https://www.lingang.gov.cn/upload/1/cms/content/editor/9b7fa826-9f79-44fb-86dd-cfec767770e9.pdf,政府官网_项目用海论证报告,default_proxy,同类海底数据中心公开代理；不是本项目保证值
 DGX_H100_H200_MAX,equivalent_gpu_it_power,1.275,kW/GPU,2026-07-25,https://docs.nvidia.com/dgx/dgxh100-user-guide/introduction-to-dgxh100.html,企业官方网站_产品技术文档,default_proxy,10.2kW最大系统功率除以8GPU；不含外部网络和存储

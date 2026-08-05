@@ -9,7 +9,7 @@
   "raw_fiber_availability": 1.0,
   "power_interface_mode": "constant",
   "constant_dc_power_cap_mw": 8.2,
-  "constant_electricity_price_yuan_per_mwh": 372.7,
+  "constant_electricity_price_yuan_per_mwh": 401.34,
   "sea_target_longitude": 113.0,
   "sea_target_latitude": 21.2,
   "sea_target_depth_m": 50.0,
