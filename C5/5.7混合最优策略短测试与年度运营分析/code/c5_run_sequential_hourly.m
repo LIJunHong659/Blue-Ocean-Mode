@@ -107,7 +107,7 @@ for t=1:N
         reserveRelaxed || reliabilityRelaxed);
     hourStrictPass(t)=hourRunStatus(t)=="PASS_STRICT";
     hourRelaxedPass(t)=hourRunStatus(t)=="PASS_RELAXED";
-    state=terminal_state(result);
+    state=terminal_state(result,cfg);
 
     if strategy.forecastMode=="KALMAN_PRIOR_POSTERIOR"
         [~,forecastState]=c5_kalman_prior_posterior_policy( ...
@@ -1356,12 +1356,28 @@ assert(numel(value)==W, ...
 availability.(name)=value;
 end
 
-function state=terminal_state(result)
+function state=terminal_state(result,cfg)
 d=result.dispatch;
+elyModules=max(0,round(d.nElectrolyzerOnline(end)));
+elyPower=max(0,d.pElectrolyzerMW(end));
+tolMW=1e-5;
+if elyModules==0 || elyPower<=tolMW
+    elyModules=0;
+    elyPower=0;
+else
+    elyMin=cfg.hydrogen.moduleMinMW*elyModules;
+    elyMax=min(cfg.hydrogen.moduleRatedMW*elyModules, ...
+        cfg.hydrogen.electrolyzerRatedMW);
+    if elyPower<elyMin && elyMin-elyPower<=tolMW
+        elyPower=elyMin;
+    elseif elyPower>elyMax && elyPower-elyMax<=tolMW
+        elyPower=elyMax;
+    end
+end
 state=struct('bessEnergyMWh',max(0,d.bessEnergyMWh(end)), ...
     'h2InventoryKg',max(0,d.h2InventoryKg(end)), ...
-    'electrolyzerOnlineModules',max(0,round(d.nElectrolyzerOnline(end))), ...
-    'electrolyzerPowerMW',max(0,d.pElectrolyzerMW(end)), ...
+    'electrolyzerOnlineModules',elyModules, ...
+    'electrolyzerPowerMW',elyPower, ...
     'computePowerMW',max(0,d.pComputeFacilityMW(end)), ...
     'h2PowerMW',max(0,d.pH2PowerMW(end)));
 end
