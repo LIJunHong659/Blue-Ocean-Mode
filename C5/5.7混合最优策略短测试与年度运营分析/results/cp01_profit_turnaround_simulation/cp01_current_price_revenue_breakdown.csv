@@ -1,0 +1,2 @@
+﻿dispatch_basis,pricing_basis,electricity_price_cny_per_mwh_received,hydrogen_price_cny_per_kg_delivered,compute_price_cny_per_mwh_cs,e_cable_received_mwh,h2_delivered_kg,e_compute_service_mwh_cs,electricity_revenue_cny,hydrogen_revenue_cny,compute_revenue_cny,other_revenue_cny,total_revenue_cny
+original 8760h dispatch,current C5 public-market E/H/C price anchors,401.34,28.36,5000.0,737668.66314211,4403964.48297772,187398.642942757,296055941.2654544,124896432.73724814,936993214.7137849,46664988.256872654,1404610576.97336

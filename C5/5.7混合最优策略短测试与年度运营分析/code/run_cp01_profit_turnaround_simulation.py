@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import math
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -12,6 +13,7 @@ OUT_DIR = CASE_DIR / "results" / "cp01_profit_turnaround_simulation"
 
 SUMMARY_FILE = ANNUAL_DIR / "c5_annual_online_strategy_summary.csv"
 HOURLY_FILE = ANNUAL_DIR / "c5_annual_online_strategy_hourly.csv"
+PRICE_PROFILE_FILE = CASE_DIR.parent / "5.1场景设计" / "code" / "c5_market_price_profile.m"
 
 CNY_MILLION = 1_000_000.0
 TOTAL_ANNUAL_BURDEN_CNY = 4_054.611 * CNY_MILLION
@@ -32,13 +34,11 @@ H2_POWER_VARIABLE_CNY_PER_MWH = 30.0
 ELECTROLYZER_START_CNY_PER_MODULE = 20_000.0
 ELECTROLYZER_MODULE_MW = 20.0
 
-# Current CP01 document split. It is scaled to the exact annual summary
-# revenue so the scenario rows reconcile with the effective evidence package.
-CP01_REVENUE_SPLIT_CNY = {
-    "power": 290.84 * CNY_MILLION,
-    "hydrogen": 128.79 * CNY_MILLION,
-    "compute": 80.23 * CNY_MILLION,
-    "marine": 47.30 * CNY_MILLION,
+
+CURRENT_PRICE_ANCHOR_NAMES = {
+    "electricity_cny_per_mwh_received": "electricityAnnualAverageCNYPerMWh",
+    "hydrogen_cny_per_kg_delivered": "hydrogenGreenIndexCNYPerKg",
+    "compute_cny_per_mwh_cs": "computeBlendedCNYPerMWhIT",
 }
 
 
@@ -83,6 +83,23 @@ class ScenarioResult:
     assumption_note: str
 
 
+@dataclass
+class RevenueBreakdown:
+    dispatch_basis: str
+    pricing_basis: str
+    electricity_price_cny_per_mwh_received: float
+    hydrogen_price_cny_per_kg_delivered: float
+    compute_price_cny_per_mwh_cs: float
+    e_cable_received_mwh: float
+    h2_delivered_kg: float
+    e_compute_service_mwh_cs: float
+    electricity_revenue_cny: float
+    hydrogen_revenue_cny: float
+    compute_revenue_cny: float
+    other_revenue_cny: float
+    total_revenue_cny: float
+
+
 def read_summary() -> dict[str, float | str]:
     with SUMMARY_FILE.open("r", encoding="utf-8-sig", newline="") as f:
         rows = list(csv.DictReader(f))
@@ -115,10 +132,60 @@ def fnum(row: dict[str, float | str], key: str) -> float:
     return float(value)
 
 
-def scaled_revenue_split(total_revenue_cny: float) -> dict[str, float]:
-    base_total = sum(CP01_REVENUE_SPLIT_CNY.values())
-    scale = total_revenue_cny / base_total
-    return {name: value * scale for name, value in CP01_REVENUE_SPLIT_CNY.items()}
+
+def read_current_price_anchors() -> dict[str, float]:
+    text = PRICE_PROFILE_FILE.read_text(encoding="utf-8")
+    anchors: dict[str, float] = {}
+    for key, anchor_name in CURRENT_PRICE_ANCHOR_NAMES.items():
+        pattern = "'" + re.escape(anchor_name) + r"'\s*,\s*([0-9]+(?:\.[0-9]+)?)"
+        match = re.search(pattern, text)
+        if not match:
+            raise RuntimeError(f"Missing C5 price anchor {anchor_name} in {PRICE_PROFILE_FILE}.")
+        anchors[key] = float(match.group(1))
+    return anchors
+
+
+def current_price_revenue_breakdown(
+    summary: dict[str, float | str],
+) -> RevenueBreakdown:
+    anchors = read_current_price_anchors()
+    electricity_price = anchors["electricity_cny_per_mwh_received"]
+    hydrogen_price = anchors["hydrogen_cny_per_kg_delivered"]
+    compute_price = anchors["compute_cny_per_mwh_cs"]
+    e_cable_received_mwh = float(summary["eCableReceivedMWh"])
+    h2_delivered_kg = float(summary["h2DeliveredKg"])
+    e_compute_service_mwh_cs = float(summary["eComputeServiceMWhCS"])
+    electricity_revenue = e_cable_received_mwh * electricity_price
+    hydrogen_revenue = h2_delivered_kg * hydrogen_price
+    compute_revenue = e_compute_service_mwh_cs * compute_price
+    total_revenue = float(summary["outputRevenueCNY"])
+    other_revenue = total_revenue - (
+        electricity_revenue + hydrogen_revenue + compute_revenue
+    )
+    return RevenueBreakdown(
+        dispatch_basis="original 8760h dispatch",
+        pricing_basis="current C5 public-market E/H/C price anchors",
+        electricity_price_cny_per_mwh_received=electricity_price,
+        hydrogen_price_cny_per_kg_delivered=hydrogen_price,
+        compute_price_cny_per_mwh_cs=compute_price,
+        e_cable_received_mwh=e_cable_received_mwh,
+        h2_delivered_kg=h2_delivered_kg,
+        e_compute_service_mwh_cs=e_compute_service_mwh_cs,
+        electricity_revenue_cny=electricity_revenue,
+        hydrogen_revenue_cny=hydrogen_revenue,
+        compute_revenue_cny=compute_revenue,
+        other_revenue_cny=other_revenue,
+        total_revenue_cny=total_revenue,
+    )
+
+
+def breakdown_as_split(breakdown: RevenueBreakdown) -> dict[str, float]:
+    return {
+        "power": breakdown.electricity_revenue_cny,
+        "hydrogen": breakdown.hydrogen_revenue_cny,
+        "compute": breakdown.compute_revenue_cny,
+        "marine": breakdown.other_revenue_cny,
+    }
 
 
 def replay_hydrogen(hourly_rows: list[dict[str, float | str]], cap_mw: float) -> ReplayResult:
@@ -202,10 +269,14 @@ def replay_hydrogen(hourly_rows: list[dict[str, float | str]], cap_mw: float) ->
     )
 
 
-def build_scenarios(summary: dict[str, float | str], hourly_rows: list[dict[str, float | str]]) -> tuple[list[ScenarioResult], list[ReplayResult]]:
+def build_scenarios(
+    summary: dict[str, float | str],
+    hourly_rows: list[dict[str, float | str]],
+) -> tuple[list[ScenarioResult], list[ReplayResult], RevenueBreakdown]:
     total_revenue = float(summary["outputRevenueCNY"])
     total_cost = float(summary["operatingCostCNY"])
-    split = scaled_revenue_split(total_revenue)
+    revenue_breakdown = current_price_revenue_breakdown(summary)
+    split = breakdown_as_split(revenue_breakdown)
 
     source_cost = float(summary["eSourceUsedMWh"]) * SOURCE_OM_CNY_PER_MWH
     bess_cost = sum(fnum(row, "pBessDischargeMW") for row in hourly_rows) * BESS_DEGRADATION_CNY_PER_MWH
@@ -343,7 +414,7 @@ def build_scenarios(summary: dict[str, float | str], hourly_rows: list[dict[str,
             "一期目标合同收入 + 氢只按实际交付确认收入；不确认期末库存价值。",
         )
     )
-    return scenarios, replays
+    return scenarios, replays, revenue_breakdown
 
 
 def make_scenario(
@@ -458,7 +529,7 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     summary = read_summary()
     hourly_rows = read_hourly_rows()
-    scenarios, replays = build_scenarios(summary, hourly_rows)
+    scenarios, replays, revenue_breakdown = build_scenarios(summary, hourly_rows)
 
     scenario_rows = [s.__dict__ for s in scenarios]
     scenario_fields = list(scenario_rows[0].keys())
@@ -467,6 +538,14 @@ def main() -> None:
     replay_rows = [r.__dict__ for r in replays]
     replay_fields = list(replay_rows[0].keys())
     write_csv(OUT_DIR / "cp01_hydrogen_module_replay.csv", replay_rows, replay_fields)
+
+    revenue_rows = [revenue_breakdown.__dict__]
+    revenue_fields = list(revenue_rows[0].keys())
+    write_csv(
+        OUT_DIR / "cp01_current_price_revenue_breakdown.csv",
+        revenue_rows,
+        revenue_fields,
+    )
     write_markdown(scenarios, replays, OUT_DIR / "cp01_profit_turnaround_simulation.md")
 
     print("CP01 profit-turnaround simulation complete.")
