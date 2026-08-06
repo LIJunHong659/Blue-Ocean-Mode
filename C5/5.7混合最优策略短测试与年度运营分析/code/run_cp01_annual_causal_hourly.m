@@ -1,4 +1,4 @@
-﻿function [summary,eventSummary,hourlyLedger,results] = ...
+function [summary,eventSummary,hourlyLedger,results] = ...
     run_cp01_annual_causal_hourly(outputDir,horizonH,phaseId)
 %RUN_CP01_ANNUAL_CAUSAL_HOURLY True CP01 annual dispatch simulation.
 %
@@ -109,15 +109,15 @@ switch char(phaseId)
         cfg.hydrogen.rampDownMWPerH=7992;
         cfg.h2Power.enabled=true;
         cfg.h2Power.ratedMW=30;
-        in.hydrogenPriceCNYPerKg=35*ones(numel(scenario.hourly.eventCode),1);
+        in.hydrogenPriceCNYPerKg=28.36*ones(numel(scenario.hourly.eventCode),1);
         burdenCNY=0.12*totalAnnualBurdenCNY;
-        phaseNote="30 MW PEM; 35 CNY/kg H2 offtake; retained burden 12%";
+        phaseNote="30 MW PEM; 28.36 CNY/kg H2 offtake; retained burden 12%";
     case 'cp01_phase2_100mw_reliability_reference'
         cfg.h2Power.enabled=true;
         cfg.h2Power.ratedMW=30;
-        in.hydrogenPriceCNYPerKg=35*ones(numel(scenario.hourly.eventCode),1);
+        in.hydrogenPriceCNYPerKg=28.36*ones(numel(scenario.hourly.eventCode),1);
         burdenCNY=0.12*totalAnnualBurdenCNY;
-        phaseNote="100 MW PEM reliability reference; 35 CNY/kg H2 offtake; retained burden 12%";
+        phaseNote="100 MW PEM reliability reference; 28.36 CNY/kg H2 offtake; retained burden 12%";
     case 'cp01_phase1_light_asset_no_h2'
         cfg.h2Power.enabled=false;
         cfg.h2Power.ratedMW=0;

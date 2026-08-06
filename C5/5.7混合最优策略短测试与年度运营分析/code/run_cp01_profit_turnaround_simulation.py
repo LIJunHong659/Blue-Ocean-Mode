@@ -387,13 +387,13 @@ def build_scenarios(
         )
     )
 
-    h2_contract_price = 35.0
+    h2_contract_price = 28.36
     phase2_revenue = phase1_target_revenue + replay_30.h2_delivered_kg * h2_contract_price
     phase2_cost = phase1_operating_cost + replay_30.variable_cost_cny
     scenarios.append(
         make_scenario(
             "cp01_phase2_30mw_h2_contract_88pct_burden_reduction",
-            "二期：30 MW 模块化制氢 + 35 CNY/kg 承购",
+            "二期：30 MW 模块化制氢 + 28.36 CNY/kg 承购",
             "hourly hydrogen replay with 30 MW electrolyzer cap",
             TOTAL_ANNUAL_BURDEN_CNY * 0.12,
             0.12,
@@ -519,7 +519,7 @@ def write_markdown(scenarios: list[ScenarioResult], replays: list[ReplayResult],
             "- 现状全量重资产边界下，年度运行毛收益为正，但项目层净现金仍为大额负值。",
             "- 只做到 80% 年化负担下降仍不能转正；即使一期目标合同收入成立，88% 下降也只接近转正，未达到 1.2 安全系数。",
             "- 当实际承担年化负担压到当前约 10%，一期经济口径通过 1.2 门槛；但若完全去掉制氢/储氢，原年度台风代理事件的 ENS=0 证据不能直接继承。",
-            "- 二期加入 30 MW 模块化制氢并按 35 CNY/kg 实际交付确认收入后，在 88% 年化负担下降口径下通过 1.2 门槛；该结果依赖氢承购价、交付需求和当前逐时回放假设。",
+            "- 二期加入 30 MW 模块化制氢并按 28.36 CNY/kg 实际交付确认收入后，在 88% 年化负担下降口径下通过 1.2 门槛；该结果依赖氢承购价、交付需求和当前逐时回放假设。",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
