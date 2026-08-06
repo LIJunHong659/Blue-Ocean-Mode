@@ -11,7 +11,7 @@ REPLAY_FILE = OUT_DIR / "cp01_hydrogen_module_replay.csv"
 REPORT_FILE = OUT_DIR / "cp01_profit_turnaround_simulation_checked_v2.md"
 
 CNY_MILLION = 1_000_000.0
-H2_CONTRACT_PRICE_CNY_PER_KG = 35.0
+H2_CONTRACT_PRICE_CNY_PER_KG = 28.36
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -63,7 +63,7 @@ def main() -> None:
             f"{f(row, 'coverage_ratio'):.3f} | {'PASS' if row['pass_cp01_1p2_gate'] == 'True' else 'FAIL'} |"
         )
     lines.append(
-        f"| 二期保供对照：100 MW 制氢 + 35 CNY/kg 承购 | {fmt_m(burden_88)} | "
+        f"| 二期保供对照：100 MW 制氢 + 28.36 CNY/kg 承购 | {fmt_m(burden_88)} | "
         f"{fmt_m(phase2_100_revenue)} | {fmt_m(phase2_100_cost)} | "
         f"{fmt_m(phase2_100_margin)} | {fmt_m(phase2_100_net)} | "
         f"{phase2_100_coverage:.3f} | PASS |"
