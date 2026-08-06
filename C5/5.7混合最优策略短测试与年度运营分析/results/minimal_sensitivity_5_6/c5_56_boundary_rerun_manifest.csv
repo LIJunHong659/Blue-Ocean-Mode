@@ -1,0 +1,5 @@
+caseId,parameterGroup,method,flexibleComputeRatio,cableLossFraction,dispatchStatus,summaryFile,hourlyFile,eventSummaryFile,note
+flex_ratio_0p50,compute_flexible_ratio,ANNUAL_DISPATCH_RERUN_REQUIRED,0.5,NaN,NOT_RUN_DEFAULT,,,,Rebuilds compute load as 50% flexible and 50% rigid.
+flex_ratio_0p80,compute_flexible_ratio,ANNUAL_DISPATCH_RERUN_REQUIRED,0.8,NaN,NOT_RUN_DEFAULT,,,,Rebuilds compute load as 80% flexible and 20% rigid.
+distance_loss_proxy_0p05,cable_loss_fraction,ANNUAL_DISPATCH_RERUN_REQUIRED,NaN,0.05,NOT_RUN_DEFAULT,,,,Nearshore loss proxy; does not change cable CAPEX unless paired with cost table.
+distance_loss_proxy_0p12,cable_loss_fraction,ANNUAL_DISPATCH_RERUN_REQUIRED,NaN,0.12,NOT_RUN_DEFAULT,,,,Farshore loss proxy; does not change cable CAPEX unless paired with cost table.

@@ -1,0 +1,4 @@
+parameter,unitStep,baselineQuantity,annualRevenueChangeCNY,annualRevenueChangeMillionCNY
+electricity_price,+10 CNY/MWh received,737668.66314211,7376686.6314211,7.3766866314211
+hydrogen_price,+1 CNY/kg delivered,4403964.48297772,4403964.48297772,4.40396448297772
+compute_price,+100 CNY/MWh-CS,187398.642942757,18739864.2942757,18.7398642942757
