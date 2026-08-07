@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import math
 from pathlib import Path
@@ -6,6 +6,7 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+import matplotlib.font_manager as font_manager
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -48,6 +49,61 @@ CASE_LABELS = {
 }
 
 
+
+CASE_DISPLAY_LABELS = {
+    "Base": "基准",
+    "Power -10": "电价 -10",
+    "Power +10": "电价 +10",
+    "H2 -1": "氢价 -1",
+    "H2 +1": "氢价 +1",
+    "Compute -100": "算力价 -100",
+    "Compute +100": "算力价 +100",
+    "Device -20%": "设备成本 -20%",
+    "Device +20%": "设备成本 +20%",
+    "Cable -20%": "海缆成本 -20%",
+    "Cable +20%": "海缆成本 +20%",
+    "100 km": "100 km",
+    "200 km": "200 km",
+    "300 km": "300 km",
+    "Flex 50%": "柔性算力 50%",
+    "Cable loss 12%": "海缆损耗 12%",
+}
+
+EVENT_DISPLAY_LABELS = {
+    "NORMAL": "正常",
+    "TYPHOON_WARNING": "台风预警",
+    "TYPHOON_PASSAGE": "台风过境",
+    "TYPHOON_RECOVERY": "恢复",
+}
+
+
+def configure_chinese_font() -> None:
+    candidates = [
+        ("Microsoft YaHei", Path("C:/Windows/Fonts/msyh.ttc")),
+        ("SimHei", Path("C:/Windows/Fonts/simhei.ttf")),
+        ("SimSun", Path("C:/Windows/Fonts/simsun.ttc")),
+        ("Noto Sans CJK SC", None),
+        ("Source Han Sans SC", None),
+        ("Arial Unicode MS", None),
+    ]
+    available = {f.name for f in font_manager.fontManager.ttflist}
+    for family, path in candidates:
+        if family not in available and path is not None and path.exists():
+            font_manager.fontManager.addfont(str(path))
+            available = {f.name for f in font_manager.fontManager.ttflist}
+        if family in available:
+            plt.rcParams["font.sans-serif"] = [family, "DejaVu Sans"]
+            break
+    plt.rcParams["axes.unicode_minus"] = False
+
+
+def display_case(label: str) -> str:
+    return CASE_DISPLAY_LABELS.get(label, label)
+
+
+def display_event(label: str) -> str:
+    return EVENT_DISPLAY_LABELS.get(label, label)
+
 def ensure_dirs() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     PROC_DIR.mkdir(parents=True, exist_ok=True)
@@ -66,7 +122,7 @@ def kt_co2e(series: pd.Series) -> pd.Series:
 
 
 def savefig(name: str) -> None:
-    plt.tight_layout()
+    plt.tight_layout(rect=(0, 0, 1, 0.96))
     plt.savefig(FIG_DIR / name, dpi=180, bbox_inches="tight")
     plt.close()
 
@@ -116,26 +172,27 @@ def plot_price(price: pd.DataFrame) -> None:
         "Compute +100",
     ]
     plot_df = price.set_index("caseLabel").loc[order].reset_index()
+    plot_df["displayLabel"] = plot_df["caseLabel"].map(display_case)
 
     fig, ax = plt.subplots(figsize=(10.5, 5.6))
-    ax.plot(plot_df["caseLabel"], plot_df["outputRevenueMCNY"], marker="o", linewidth=2.2, label="Output revenue")
+    ax.plot(plot_df["displayLabel"], plot_df["outputRevenueMCNY"], marker="o", linewidth=2.2, label="输出收入")
     ax.plot(
-        plot_df["caseLabel"],
+        plot_df["displayLabel"],
         plot_df["cashOperatingMarginMCNY"],
         marker="s",
         linewidth=2.2,
-        label="Cash margin",
+        label="现金运行毛收益",
     )
     ax.axhline(
         price.loc[price["caseLabel"] == "Base", "outputRevenueMCNY"].iloc[0],
         color="#8a8a8a",
         linewidth=1,
         linestyle="--",
-        label="Base revenue",
+        label="基准输出收入",
     )
-    ax.set_title("Fixed-dispatch price sensitivity")
-    ax.set_ylabel("Million CNY per year")
-    ax.set_xlabel("Repriced case")
+    ax.set_title("固定调度重定价敏感性")
+    ax.set_ylabel("年度金额（百万元）")
+    ax.set_xlabel("重定价场景")
     ax.grid(True, axis="y", alpha=0.28)
     ax.legend(ncol=3, loc="upper left")
     ax.tick_params(axis="x", rotation=20)
@@ -143,10 +200,11 @@ def plot_price(price: pd.DataFrame) -> None:
 
     slope = price[price["caseLabel"].isin(["Power +10", "H2 +1", "Compute +100"])].copy()
     slope["deltaAbsMCNY"] = slope["revenueDeltaMCNY"].abs()
+    slope["displayLabel"] = slope["caseLabel"].map(display_case)
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
-    ax.bar(slope["caseLabel"], slope["deltaAbsMCNY"], color=["#4878a8", "#59a14f", "#e15759"])
-    ax.set_title("Annual revenue slope by unit price step")
-    ax.set_ylabel("Revenue change, million CNY")
+    ax.bar(slope["displayLabel"], slope["deltaAbsMCNY"], color=["#4878a8", "#59a14f", "#e15759"])
+    ax.set_title("单位价格步长的年度收入斜率")
+    ax.set_ylabel("年度收入变化（百万元）")
     ax.grid(True, axis="y", alpha=0.25)
     for idx, value in enumerate(slope["deltaAbsMCNY"]):
         ax.text(idx, value + 0.3, f"{value:.3f}", ha="center", va="bottom", fontsize=9)
@@ -188,12 +246,13 @@ def plot_cost(cost: pd.DataFrame) -> None:
         "300 km",
     ]
     plot_df = cost.set_index("caseLabel").loc[groups].reset_index()
+    plot_df["displayLabel"] = plot_df["caseLabel"].map(display_case)
     colors = ["#59a14f" if x >= 0 else "#e15759" for x in plot_df["deltaProjectAnnualNetCashMCNY"]]
     fig, ax = plt.subplots(figsize=(10.5, 5.4))
-    ax.bar(plot_df["caseLabel"], plot_df["deltaProjectAnnualNetCashMCNY"], color=colors)
+    ax.bar(plot_df["displayLabel"], plot_df["deltaProjectAnnualNetCashMCNY"], color=colors)
     ax.axhline(0, color="#333333", linewidth=1)
-    ax.set_title("Lifecycle post-process net cash delta")
-    ax.set_ylabel("Delta vs base, million CNY per year")
+    ax.set_title("生命周期后处理净现金变化")
+    ax.set_ylabel("相对基准净现金变化（百万元/年）")
     ax.grid(True, axis="y", alpha=0.25)
     ax.tick_params(axis="x", rotation=20)
     savefig("c5_56_cost_delta_bar.png")
@@ -206,10 +265,10 @@ def plot_cost(cost: pd.DataFrame) -> None:
         marker="o",
         linewidth=2.2,
         color="#4878a8",
-        label="Annualized burden",
+        label="年化投资负担",
     )
-    ax1.set_xlabel("Distance to shore, km")
-    ax1.set_ylabel("Annualized burden, million CNY")
+    ax1.set_xlabel("离岸距离（km）")
+    ax1.set_ylabel("年化投资负担（百万元）")
     ax1.grid(True, alpha=0.25)
     ax2 = ax1.twinx()
     ax2.plot(
@@ -218,13 +277,13 @@ def plot_cost(cost: pd.DataFrame) -> None:
         marker="s",
         linewidth=2.2,
         color="#e15759",
-        label="Project net cash",
+        label="项目年度净现金",
     )
-    ax2.set_ylabel("Project net cash, million CNY")
+    ax2.set_ylabel("项目年度净现金（百万元）")
     lines, labels = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines + lines2, labels + labels2, loc="best")
-    ax1.set_title("Distance CAPEX-only sensitivity")
+    ax1.set_title("离岸距离 CAPEX 代理敏感性")
     savefig("c5_56_distance_capex_line.png")
 
 
@@ -295,45 +354,44 @@ def read_boundary_summary() -> pd.DataFrame:
 def plot_boundary(summary: pd.DataFrame) -> None:
     order = ["Base", "Flex 50%", "Cable loss 12%"]
     s = summary.set_index("caseLabel").loc[order].reset_index()
+    s["displayLabel"] = s["caseLabel"].map(display_case)
 
     fig, axes = plt.subplots(2, 2, figsize=(12.5, 8.0))
     metrics = [
-        ("ensMWh", "ENS, MWh"),
-        ("cashOperatingMarginMCNY", "Cash margin, million CNY"),
-        ("eCableReceivedMWh", "Cable received, MWh"),
-        ("eComputeServiceMWhCS", "Compute service, MWh-CS"),
+        ("ensMWh", "ENS（MWh）"),
+        ("cashOperatingMarginMCNY", "现金运行毛收益（百万元）"),
+        ("eCableReceivedMWh", "海缆受端电量（MWh）"),
+        ("eComputeServiceMWhCS", "算力服务量（MWh-CS）"),
     ]
     for ax, (col, title) in zip(axes.ravel(), metrics):
-        ax.plot(s["caseLabel"], s[col], marker="o", linewidth=2.2)
+        ax.plot(s["displayLabel"], s[col], marker="o", linewidth=2.2)
         ax.set_title(title)
         ax.grid(True, axis="y", alpha=0.25)
         ax.tick_params(axis="x", rotation=15)
-    fig.suptitle("Annual boundary rerun KPI comparison", y=1.02, fontsize=14)
+    fig.suptitle("年度边界重跑关键指标对比", y=1.02, fontsize=14)
     savefig("c5_56_boundary_kpi_line_grid.png")
 
-    relax = s[
-        [
-            "caseLabel",
-            "planFallbackHours",
-            "reserveConstraintRelaxationHours",
-            "reliabilityRelaxationHours",
-        ]
-    ].set_index("caseLabel")
+    relax = s[[
+        "displayLabel",
+        "planFallbackHours",
+        "reserveConstraintRelaxationHours",
+        "reliabilityRelaxationHours",
+    ]].set_index("displayLabel")
     fig, ax = plt.subplots(figsize=(10.5, 5.4))
     relax.plot(kind="bar", ax=ax, color=["#4878a8", "#f28e2b", "#e15759"])
-    ax.set_title("Fallback and relaxation hours")
-    ax.set_ylabel("Hours per year")
+    ax.set_title("计划回退与约束松弛小时数")
+    ax.set_ylabel("年度小时数")
     ax.grid(True, axis="y", alpha=0.25)
     ax.tick_params(axis="x", rotation=0)
-    ax.legend(["Plan fallback", "Reserve relax", "Reliability relax"])
+    ax.legend(["计划回退", "储备松弛", "可靠性松弛"])
     savefig("c5_56_boundary_relaxation_bar.png")
 
-    ghg = s[["caseLabel", "proxyNetGHGKtCO2e"]]
+    ghg = s[["displayLabel", "proxyNetGHGKtCO2e"]]
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
-    ax.bar(ghg["caseLabel"], ghg["proxyNetGHGKtCO2e"], color=["#4878a8", "#59a14f", "#e15759"])
+    ax.bar(ghg["displayLabel"], ghg["proxyNetGHGKtCO2e"], color=["#4878a8", "#59a14f", "#e15759"])
     ax.axhline(0, color="#333333", linewidth=1)
-    ax.set_title("Proxy net GHG")
-    ax.set_ylabel("ktCO2e per year")
+    ax.set_title("净碳代理对比")
+    ax.set_ylabel("ktCO2e/年")
     ax.grid(True, axis="y", alpha=0.25)
     savefig("c5_56_boundary_proxy_ghg_bar.png")
 
@@ -359,12 +417,13 @@ def plot_events(events: pd.DataFrame) -> None:
         .reindex(order)
         .reset_index()
     )
+    pivot["displayEvent"] = pivot["eventCode"].map(display_event)
     fig, ax = plt.subplots(figsize=(10.5, 5.5))
     for label in ["Base", "Flex 50%", "Cable loss 12%"]:
-        ax.plot(pivot["eventCode"], pivot[label], marker="o", linewidth=2.2, label=label)
-    ax.set_title("ENS by event phase")
-    ax.set_ylabel("ENS, MWh")
-    ax.set_xlabel("Event phase")
+        ax.plot(pivot["displayEvent"], pivot[label], marker="o", linewidth=2.2, label=display_case(label))
+    ax.set_title("分事件阶段 ENS")
+    ax.set_ylabel("ENS（MWh）")
+    ax.set_xlabel("事件阶段")
     ax.grid(True, axis="y", alpha=0.25)
     ax.tick_params(axis="x", rotation=15)
     ax.legend()
@@ -375,12 +434,13 @@ def plot_events(events: pd.DataFrame) -> None:
         .reindex(order)
         .reset_index()
     )
+    rate["displayEvent"] = rate["eventCode"].map(display_event)
     fig, ax = plt.subplots(figsize=(10.5, 5.5))
     for label in ["Base", "Flex 50%", "Cable loss 12%"]:
-        ax.plot(rate["eventCode"], rate[label], marker="o", linewidth=2.2, label=label)
-    ax.set_title("Critical service rate by event phase")
-    ax.set_ylabel("Critical service rate, %")
-    ax.set_xlabel("Event phase")
+        ax.plot(rate["displayEvent"], rate[label], marker="o", linewidth=2.2, label=display_case(label))
+    ax.set_title("分事件阶段关键负荷服务率")
+    ax.set_ylabel("关键负荷服务率（%）")
+    ax.set_xlabel("事件阶段")
     ax.grid(True, axis="y", alpha=0.25)
     ax.tick_params(axis="x", rotation=15)
     ax.legend()
@@ -423,10 +483,10 @@ def plot_hourly(hourly: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(11.5, 5.6))
     for label in order:
         part = hourly[hourly["caseLabel"] == label].sort_values("hour")
-        ax.plot(part["hour"], part["cumCashMarginMCNY"], linewidth=2.0, label=label)
-    ax.set_title("Annual cumulative cash margin")
-    ax.set_xlabel("Hour")
-    ax.set_ylabel("Cumulative cash margin, million CNY")
+        ax.plot(part["hour"], part["cumCashMarginMCNY"], linewidth=2.0, label=display_case(label))
+    ax.set_title("全年累计现金运行毛收益")
+    ax.set_xlabel("小时")
+    ax.set_ylabel("累计现金运行毛收益（百万元）")
     ax.grid(True, alpha=0.25)
     ax.legend()
     savefig("c5_56_hourly_cumulative_cash_margin_line.png")
@@ -442,10 +502,10 @@ def plot_hourly(hourly: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(11.5, 5.6))
     for label in order:
         part = window[window["caseLabel"] == label].sort_values("hour")
-        ax.plot(part["hour"], part["ensMWh"], linewidth=2.0, label=label)
-    ax.set_title("Hourly ENS around extreme event")
-    ax.set_xlabel("Hour")
-    ax.set_ylabel("ENS, MWh")
+        ax.plot(part["hour"], part["ensMWh"], linewidth=2.0, label=display_case(label))
+    ax.set_title("极端事件窗口逐时 ENS")
+    ax.set_xlabel("小时")
+    ax.set_ylabel("ENS（MWh）")
     ax.grid(True, alpha=0.25)
     ax.legend()
     savefig("c5_56_hourly_typhoon_ens_line.png")
@@ -453,15 +513,15 @@ def plot_hourly(hourly: pd.DataFrame) -> None:
     base_window = window[window["caseLabel"] == "Base"].sort_values("hour")
     fig, ax = plt.subplots(figsize=(11.5, 5.6))
     for col, label in [
-        ("eCableReceivedMWh", "Cable received"),
-        ("eHydrogenInputMWh", "Hydrogen input"),
-        ("eFlexibleComputeInputMWh", "Compute input"),
-        ("eCurtailmentMWh", "Curtailment"),
+        ("eCableReceivedMWh", "海缆受端"),
+        ("eHydrogenInputMWh", "制氢投入"),
+        ("eFlexibleComputeInputMWh", "算力投入"),
+        ("eCurtailmentMWh", "弃能"),
     ]:
         ax.plot(base_window["hour"], base_window[col], linewidth=1.9, label=label)
-    ax.set_title("Base dispatch channels around extreme event")
-    ax.set_xlabel("Hour")
-    ax.set_ylabel("MWh per hour")
+    ax.set_title("基准场景极端事件窗口调度通道")
+    ax.set_xlabel("小时")
+    ax.set_ylabel("每小时电量（MWh）")
     ax.grid(True, alpha=0.25)
     ax.legend(ncol=2)
     savefig("c5_56_hourly_base_event_dispatch_line.png")
@@ -469,6 +529,7 @@ def plot_hourly(hourly: pd.DataFrame) -> None:
 
 def main() -> None:
     ensure_dirs()
+    configure_chinese_font()
     price = build_price_outputs()
     plot_price(price)
     cost = build_cost_outputs()
