@@ -1,7 +1,19 @@
-﻿# 第五章 方案验证与运营分析报告
+# 第五章 方案验证与运营分析报告
 
 > 口径声明：本章基于当前仓库内 C5 已落盘的有效仿真结果展开分析。相关结果用于方案比较和运行机理判断，不等同于可研概算、融资承诺、投资收益承诺或设备性能保证。电力外送价、氢价和算力服务价采用公开市场代理锚值，尚非项目合同价；海洋服务价仍为 **[假设值，待企业调研校准]**。除已注明公开来源的数据外，容量、任务池、设备可用率、极端事件和控制参数均按 **[假设值，待企业调研校准]** 处理。文中仿真结果均为 **[模型仿真输出；输入含政府公开数据与假设参数]**。
 
+## 阅读提示
+
+先按证据层读本章，避免把不同口径混在一起：
+
+| 证据层 | 适用内容 | 可以直接引用 | 不能直接写成 |
+|---|---|---|---|
+| 48 h 机制验证 | 5.1.2、5.4.1 | 接口闭合、状态转移、代数审计通过 | 方案排名或年度投资结论 |
+| 48 h 正常典型 | 5.2、5.4.1、5.5 | 四方案横比、短窗收益和消纳 | 年度结论 |
+| 年度在线主账 | 5.4.2、5.5、5.7 | 在线策略年度运行、回退和极端事件响应 | 三基准年度全量横评 |
+| 敏感性分析 | 5.6 | 价格弹性、成本重算、边界重跑 | 所有场景都已完成 |
+
+文中带 `**[假设值，待企业调研校准]**` 的项统一按模型边界阅读，不按工程定值或合同承诺解读。当前年度基准只完成纯电资产基准，纯氢和纯算年度结果仍待补齐，因此年度部分只写“在线混合策略 vs 纯电基准”的对照。
 ## 5.1 场景设计与数据来源
 
 本章先说明模型在逐小时调度中使用哪些输入，再说明 48 h 短场景和 8,760 h 年度场景的构造方法。当前可用于比较的短窗为 48 h，并非 168 h 典型周；后续若需要典型周结果，应重新选取或生成 168 h 场景，并按同一口径复算。
@@ -27,8 +39,8 @@
 
 | 48 h 场景 | 构造方式 | 用途 | 是否参与方案排名 |
 |---|---|---|---|
-| 机制验证 48 h | `c5_build_all_channel_48h_scenario.m` 合成多阶段压力过程 | 验证风、光、潮接口，BESS/H2 状态转移，海缆、制氢、算力、海洋负荷通道和 V5 代数审计 | 否 |
-| 正常典型 48 h | `c5_select_typical_normal_48h.m` 从年度正常候选窗口中离线选取 | 比较纯电、纯氢、纯算和在线混合策略 | 是 |
+| 机制验证 48 h | 人工合成一个覆盖低出力、升出力、价格窗口、算力窗口、海缆拥塞、储能回补和恢复过程的 48 h 压力序列；对应生成脚本为 `c5_build_all_channel_48h_scenario.m` | 验证风、光、潮接口，BESS/H2 状态转移，海缆、制氢、算力、海洋负荷通道和 V5 代数审计 | 否 |
+| 正常典型 48 h | 从年度正常运行候选窗口中离线筛选最接近正常状态中位特征的连续 48 h 样本；对应筛选脚本为 `c5_select_typical_normal_48h.m` | 比较纯电、纯氢、纯算和在线混合策略 | 是 |
 
 机制验证场景通过低出力、升出力、电价窗口、氢价窗口、算力窗口、海缆拥塞、BESS 回补和恢复等阶段，主动触发各类出口和状态变量。该场景主要用于确认模型链路能够闭合，不纳入经济性排序。
 
@@ -75,7 +87,7 @@ flowchart TB
 
 这些基准不是固定比例分配，也不会强制可用新能源全部进入某一产品。模型仍按可靠性和经济性优化：若纯氢基准下制氢不经济，电解槽可以不启动；若纯算基准下任务池不足，剩余新能源可以弃电。因此，基准结果更准确的解释是“给定资产开关边界下的最优调度结果”，而不是“强制全电、全氢、全算”的结果。
 
-当前横向比较采用正常典型 48 h 结果。年度基准目前仅完成纯电资产基准一条，尚不足以支撑三类基准的年度完整对比。
+阅读时请分两层：48 h 正常典型结果用于三基准横评；年度结果只用于“在线混合策略 vs 纯电基准”的压力对照。纯氢和纯算年度结果仍待补齐，因此本章不把年度三基准写成已完成结论。
 
 ## 5.3 对比方案与最优策略设计
 
@@ -132,7 +144,7 @@ BESS 主要承担短时平滑、关键负荷保供和调度备用。仿真过程
 
 在线混合策略的实际可选投入比例为 47.189% / 35.498% / 17.313%，分别对应电力外送、制氢和柔性算力。在该 48 h 窗口内，富余再调度触发 2 h，额外吸收 64.586 MWh 用于制氢。
 
-### 5.4.2 年度 8,760 h 结果
+### 5.4.2 年度 8,760 h 结果（仅在线混合策略 vs 纯电基准）
 
 年度有效结果包括年度纯电基准和年度在线混合策略。由于年度纯氢、纯算基准尚未补齐，当前结果更适合用于“混合策略相对纯电基准”的对比，而不是三类基准的年度完整横评。
 
@@ -188,7 +200,7 @@ BESS 主要承担短时平滑、关键负荷保供和调度备用。仿真过程
 
 ### 5.5.3 碳减排代理指标
 
-本轮使用 `c5_backfill_proxy_ghg_csv(false)` 从既有 `.mat` 结果包回填 `*_with_ghg.csv`，让典型 48 h 和年度基准结果补齐代理碳列。由于当前年度 `.mat` 未保留完整逐小时 `projectGHGKgCO2e / avoidedBaselineGHGKgCO2e / netGHGKgCO2e`，本节仍按第五章固定代理口径做同边界比较；全通道 48 h 验证结果另保留完整 `netGHGKgCO2e`，可用于口径复核。计算口径为：
+本节直接按统一代理口径比较项目排放代理、避免排放代理和净碳代理，计算公式如下。结果统一以 kgCO2e 落盘、以 tCO2e 展示；该口径仅用于同一模型边界下的相对比较，不含海洋服务常数项，也不构成产品 LCA 或碳足迹认证。
 
 ```text
 项目排放代理 = 15 kgCO2e/MWh * 新能源利用量
@@ -199,7 +211,7 @@ BESS 主要承担短时平滑、关键负荷保供和调度备用。仿真过程
 净碳代理 = 项目排放代理 - 避免排放代理
 ```
 
-回填后的 `_with_ghg.csv` 以 kgCO2e 落盘，表内统一换算为 tCO2e 展示。该口径暂不含海洋服务常数项，也不是产品 LCA 或碳足迹认证，仅用于同一模型边界下的相对比较。
+
 
 | 场景 | 方案 | 项目排放代理/tCO2e | 避免排放代理/tCO2e | 净碳代理/tCO2e |
 |---|---|---:|---:|---:|
@@ -224,7 +236,7 @@ BESS 主要承担短时平滑、关键负荷保供和调度备用。仿真过程
 
 ## 5.6 离岸距离、电价、氢价与算力价格敏感性分析
 
-本节把敏感性拆成三层：固定调度后处理的价格重定价、生命周期台账重算，以及会改变可行域的全年边界重跑。前两层只改经济参数，不重算调度；第三层必须重新跑全年。当前已完成的全年边界重跑包括 `flex_ratio_0p50` 和 `distance_loss_proxy_0p12`，其余场景仍保留为待办。结果底稿位于 `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/`，包括 `c5_56_price_slope.csv`、`c5_56_fixed_dispatch_price_sensitivity.csv`、`c5_56_fixed_dispatch_cost_sensitivity.csv`、`c5_56_boundary_rerun_manifest.csv` 和 `c5_56_minimal_sensitivity_report.md`。
+本节把敏感性拆成三层：固定调度后处理的价格重定价、生命周期台账重算，以及会改变可行域的全年边界重跑。前两层只改经济参数，不重算调度；第三层必须重新跑全年。当前已完成的全年边界重跑包括 `flex_ratio_0p50` 和 `distance_loss_proxy_0p12`，其余场景仍保留为待办。各类结果和图表统一归档在 `results/minimal_sensitivity_5_6/`。
 
 ### 5.6.1 离岸距离敏感性
 
@@ -284,60 +296,35 @@ BESS 主要承担短时平滑、关键负荷保供和调度备用。仿真过程
 ![边界场景逐时累计现金毛收益](5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_hourly_cumulative_cash_margin_line.png)
 
 ![边界场景逐时 ENS](5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_hourly_typhoon_ens_line.png)
+
 ### 5.6.5 敏感性结论
 
+结果按处理方式分组，便于先看方法、再看结论。
 
-1. 算力价格仍是当前年度在线策略的最大收入杠杆。
-2. 电价和氢价适合先做固定调度重估，用于快速判断收益弹性。
-3. 设备成本和海缆成本应通过生命周期台账重算，不必重复求解全年调度。
-4. 柔性比例和海缆损耗会改变调度可行域，必须用全年重跑验收；已完成的 `flex_ratio_0p50` 结果表明，柔性下降会显著放大 ENS 和储备松弛，而 `distance_loss_proxy_0p12` 结果表明，海缆损耗主要压缩受端电量和收入。
-5. 其余边界场景仍保留为待办，不应写成已完成证据。
+按处理方式读会更清楚：
+
+| 类型 | 处理方式 | 当前结论 | 阅读提醒 |
+|---|---|---|---|
+| 价格弹性 | 固定调度后重定价 | 算力价格仍是当前年度在线策略的最大收入杠杆；电价和氢价可先做快速收益重估 | 只看收入斜率，不改可行域 |
+| 生命周期成本 | 台账重算 | 设备成本和海缆成本应走生命周期台账，不必重复求解全年调度 | 重点看年化负担，不看逐时状态 |
+| 可行域变化 | 全年边界重跑 | `flex_ratio_0p50` 会显著放大 ENS 和储备松弛；`distance_loss_proxy_0p12` 主要压缩受端电量和收入 | 必须全年重跑验收 |
+| 待补场景 | 暂不写入结果 | 其余边界场景继续保留为待办 | 不把待办写成已完成证据 |
 
 ## 5.7 本章仿真结论
 
-1. 48 h 机制验证场景用于检查接口、状态转移和代数审计，不参与方案排名。
-2. 正常典型 48 h 中，在线混合策略消纳率达到 96.780%，弃能为 272.130 MWh，现金运行毛收益为 6.756 百万元，综合表现优于三类单一出口基准。
-3. 三类单一出口基准各有含义：纯电短窗消纳率较高，纯算单位电量变现能力较强，纯氢在当前 1 h 控制下未启动制氢。该结果反映当前控制口径下的运行表现，不宜直接否定氢资产价值。
-4. 年度在线混合策略相对年度纯电基准提高消纳率 14.759 个百分点，减少弃能 297,254.003 MWh，并增加现金运行毛收益 942.646 百万元。
-5. 年度在线混合策略 8,760 h 均求解最优并通过代数审计，但运行状态为 `PASS_RELAXED`，仍有 2,248.455 MWh ENS，尚未达到年度严格零缺供。
-6. 台风代理事件过境期源侧出力为 0，年度主账出现 341.340 MWh ENS。当前结果不足以证明系统在 24 h 零源出力条件下能够仅依靠自然储氢完成保供。
-7. 经济性和可靠性需要分开验收：经济性侧重轻资产、合同化和分期建设；可靠性则需要围绕 BESS、储氢、氢转电或外部备用重新定容，并重跑年度仿真。
-8. 敏感性分析已拆分为固定调度重定价、生命周期台账重算和少量边界全年重跑三层；当前已完成 `flex_ratio_0p50` 和 `distance_loss_proxy_0p12`，前者显著抬升 ENS 与储备松弛，后者主要压缩受端电量和收入，并同步生成价格、成本、边界和时序图，其余边界场景继续保留为待办。
-9. 项目层收益分析将在下一章展开。
+下表只保留可直接复述的一句话结论。
 
-## 证据文件
+| 主题 | 结论 |
+|---|---|
+| 48 h 机制验证 | 用于接口、状态转移和代数审计，不参与方案排名 |
+| 48 h 正常典型 | 在线混合策略消纳率 96.780%，弃能 272.130 MWh，现金运行毛收益 6.756 百万元，综合优于三类单一出口基准 |
+| 单一出口基准 | 纯电短窗消纳较高，纯算单位电量变现较强，纯氢在当前 1 h 控制下未启动制氢 |
+| 年度主账 | 在线混合策略相对纯电基准提高消纳率 14.759 个百分点，减少弃能 297,254.003 MWh，并增加现金运行毛收益 942.646 百万元 |
+| 可靠性状态 | 8,760 h 全部求解最优并通过代数审计，但仍为 `PASS_RELAXED`，年度 ENS 为 2,248.455 MWh，尚未达到严格零缺供 |
+| 台风代理事件 | 24 h 零源出力下出现 341.340 MWh ENS，当前主账不能直接证明自然储氢即可保供 |
+| 下一步 | 经济性和可靠性需要分开验收，项目层收益放到下一章 |
 
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/processed/c5_56_processed_price_cases.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/processed/c5_56_processed_cost_cases.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/processed/c5_56_processed_boundary_kpi_delta.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/processed/c5_56_processed_event_summary.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/processed/c5_56_processed_hourly_compact.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_price_slope_bar.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_price_sensitivity_line.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_cost_delta_bar.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_distance_capex_line.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_boundary_kpi_line_grid.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_boundary_relaxation_bar.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_hourly_cumulative_cash_margin_line.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_hourly_typhoon_ens_line.png`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/figures/c5_56_event_ens_line.png`
-- `C5/5.1场景设计/5.1场景设计.md`
-- `C5/5.2三大基准方案/5.2三大基准方案.md`
-- `C5/5.3对比方案与模型最优策略/5.3对比方案与模型最优策略推导.md`
-- `C5/5.3对比方案与模型最优策略/results/typical_normal_48h_four_strategy/c5_typical48_four_strategy_summary_with_ghg.csv`
-- `C5/5.3对比方案与模型最优策略/results/typical_normal_48h_four_strategy/c5_typical48_four_strategy_hourly_with_ghg.csv`
-- `C5/5.2三大基准方案/results/annual_asset_baselines_causal/c5_annual_four_strategy_summary_with_ghg.csv`
-- `C5/5.2三大基准方案/results/annual_asset_baselines_causal/c5_annual_four_strategy_hourly_with_ghg.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/5.7混合最优策略与年度运营分析.md`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/annual_8760h_online_strategy_extreme/c5_annual_online_strategy_summary_with_ghg.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/annual_8760h_online_strategy_extreme/c5_annual_online_strategy_event_summary.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/annual_8760h_online_strategy_extreme/c5_annual_online_strategy_hourly_with_ghg.csv`
-- `C5/5.3对比方案与模型最优策略/results/all_channel_48h_validation/summary_with_ghg.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/c5_56_minimal_sensitivity_report.md`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/c5_56_fixed_dispatch_price_sensitivity.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/c5_56_fixed_dispatch_cost_sensitivity.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/c5_56_boundary_rerun_manifest.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/annual_dispatch_boundary_cases/flex_ratio_0p50/c5_56_boundary_summary.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/annual_dispatch_boundary_cases/flex_ratio_0p50/c5_56_boundary_event_summary.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/annual_dispatch_boundary_cases/distance_loss_proxy_0p12/c5_56_boundary_summary.csv`
-- `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/annual_dispatch_boundary_cases/distance_loss_proxy_0p12/c5_56_boundary_event_summary.csv`
+## 结果归档
+
+- 敏感性分析的处理表、边界重跑结果和图表统一归档在 `C5/5.7混合最优策略短测试与年度运营分析/results/minimal_sensitivity_5_6/`。
+- 如需复核，优先查看该目录下的 `processed/`、`figures/` 和 `annual_dispatch_boundary_cases/` 子目录。
