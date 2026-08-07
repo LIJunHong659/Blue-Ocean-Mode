@@ -39,9 +39,9 @@ This pack separates fixed-dispatch post-processing from slow annual dispatch rer
 
 | Case | Parameter group | Status | Note |
 |---|---|---|---|
-| flex_ratio_0p50 | compute_flexible_ratio | NOT_RUN_DEFAULT | Rebuilds compute load as 50% flexible and 50% rigid. |
+| flex_ratio_0p50 | compute_flexible_ratio | RUN_COMPLETE | Rebuilds compute load as 50% flexible and 50% rigid. |
 | flex_ratio_0p80 | compute_flexible_ratio | NOT_RUN_DEFAULT | Rebuilds compute load as 80% flexible and 20% rigid. |
 | distance_loss_proxy_0p05 | cable_loss_fraction | NOT_RUN_DEFAULT | Nearshore loss proxy; does not change cable CAPEX unless paired with cost table. |
-| distance_loss_proxy_0p12 | cable_loss_fraction | NOT_RUN_DEFAULT | Farshore loss proxy; does not change cable CAPEX unless paired with cost table. |
+| distance_loss_proxy_0p12 | cable_loss_fraction | RUN_COMPLETE | Farshore loss proxy; does not change cable CAPEX unless paired with cost table. |
 
 Default output intentionally does not claim rerun evidence for dispatch-changing parameters.
